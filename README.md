@@ -18,7 +18,9 @@ Just use
 ```
 g++ -O3 -o milk2ds9 milk2ds9.cpp -lxpa  -lpthread -I/path/to/ImageStreamIO/
 ```
-where you set `/path/to/CACAO` to point to the directory containing `ImageStreamIO`.
+where you set `/path/to/ImageStreamIO` to point to the directory containing `ImageStreamIO`.
+
+Note that we don't link against cfitsio, that is in the dependencies just for some definitions in the header.
 
 ### Usage:
 
