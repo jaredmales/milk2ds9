@@ -9,7 +9,7 @@ You need:
 - ds9 (http://ds9.si.edu/site/Home.html)
 - XPA (http://hea-www.harvard.edu/RD/xpa/)
 
-  Note: you need the header installed, I recommend just compiling it yourself instead of using the package manager.
+  Note: you need the header installed which may not be provided by packages.  I recommend just compiling it yourself instead of using the package manager.
 - cfitsio (https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html)
 - CACAO (https://github.com/cacao-org/cacao) or at least MILK (https://github.com/milk-org/milk).
 
@@ -29,7 +29,7 @@ Usage: `./milk2ds9 [-h] [-f frameno] [-p pauseTime] [-s semaphoreNumber] [-t ds9
 
 Required Argument:
 
-     `/path/to/filename`   the full path to the shared memory file.
+     /path/to/filename   the full path to the shared memory file.
 
 Options:
 
@@ -45,3 +45,5 @@ Options:
      -w waitTime        specify the time, in usec, to wait
                         after sending an image to DS9.  Default
                         is 1000 usec.
+
+It's likely that pauseTime and waitTime will need to be tuned for very high frame rate applications to avoid bogging down and control CPU time used for display.
