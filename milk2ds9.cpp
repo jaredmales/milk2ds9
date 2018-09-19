@@ -66,55 +66,55 @@ int openShmem( IMAGE & image,          ///< [out] A real-time image structure wh
 
       switch(image.md[0].atype)
       {
-         case IMAGESTRUCT_UINT8:
-            imageStructDataType<IMAGESTRUCT_UINT8>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_UINT8>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_UINT8>::bitpix;
+         case _DATATYPE_UINT8:
+            imageStructDataType<_DATATYPE_UINT8>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_UINT8>::size;
+            bitpix = imageStructDataType<_DATATYPE_UINT8>::bitpix;
             break;
-         case IMAGESTRUCT_INT8:
-            imageStructDataType<IMAGESTRUCT_INT8>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_INT8>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_INT8>::bitpix;
+         case _DATATYPE_INT8:
+            imageStructDataType<_DATATYPE_INT8>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_INT8>::size;
+            bitpix = imageStructDataType<_DATATYPE_INT8>::bitpix;
             break;
-         case IMAGESTRUCT_UINT16:
-            imageStructDataType<IMAGESTRUCT_UINT16>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_UINT16>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_UINT16>::bitpix;
+         case _DATATYPE_UINT16:
+            imageStructDataType<_DATATYPE_UINT16>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_UINT16>::size;
+            bitpix = imageStructDataType<_DATATYPE_UINT16>::bitpix;
             break;
-         case IMAGESTRUCT_INT16:
-            imageStructDataType<IMAGESTRUCT_INT16>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_INT16>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_INT16>::bitpix;
+         case _DATATYPE_INT16:
+            imageStructDataType<_DATATYPE_INT16>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_INT16>::size;
+            bitpix = imageStructDataType<_DATATYPE_INT16>::bitpix;
             break;
-         case IMAGESTRUCT_UINT32:
-            imageStructDataType<IMAGESTRUCT_UINT32>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_UINT32>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_UINT32>::bitpix;
+         case _DATATYPE_UINT32:
+            imageStructDataType<_DATATYPE_UINT32>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_UINT32>::size;
+            bitpix = imageStructDataType<_DATATYPE_UINT32>::bitpix;
             break;
-         case IMAGESTRUCT_INT32:
-            imageStructDataType<IMAGESTRUCT_INT32>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_INT32>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_INT32>::bitpix;
+         case _DATATYPE_INT32:
+            imageStructDataType<_DATATYPE_INT32>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_INT32>::size;
+            bitpix = imageStructDataType<_DATATYPE_INT32>::bitpix;
             break;
-         case IMAGESTRUCT_UINT64:
-            imageStructDataType<IMAGESTRUCT_UINT64>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_UINT64>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_UINT64>::bitpix;
+         case _DATATYPE_UINT64:
+            imageStructDataType<_DATATYPE_UINT64>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_UINT64>::size;
+            bitpix = imageStructDataType<_DATATYPE_UINT64>::bitpix;
             break;
-         case IMAGESTRUCT_INT64:
-            imageStructDataType<IMAGESTRUCT_INT64>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_INT64>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_INT64>::bitpix;
+         case _DATATYPE_INT64:
+            imageStructDataType<_DATATYPE_INT64>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_INT64>::size;
+            bitpix = imageStructDataType<_DATATYPE_INT64>::bitpix;
             break;
-         case IMAGESTRUCT_FLOAT:
-            imageStructDataType<IMAGESTRUCT_FLOAT>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_FLOAT>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_FLOAT>::bitpix;
+         case _DATATYPE_FLOAT:
+            imageStructDataType<_DATATYPE_FLOAT>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_FLOAT>::size;
+            bitpix = imageStructDataType<_DATATYPE_FLOAT>::bitpix;
             break;
-         case IMAGESTRUCT_DOUBLE:
-            imageStructDataType<IMAGESTRUCT_DOUBLE>::setPointer( image, mapv);
-            type_size = imageStructDataType<IMAGESTRUCT_DOUBLE>::size;
-            bitpix = imageStructDataType<IMAGESTRUCT_DOUBLE>::bitpix;
+         case _DATATYPE_DOUBLE:
+            imageStructDataType<_DATATYPE_DOUBLE>::setPointer( image, mapv);
+            type_size = imageStructDataType<_DATATYPE_DOUBLE>::size;
+            bitpix = imageStructDataType<_DATATYPE_DOUBLE>::bitpix;
             break;
          default:
             std::cerr << "Unknown or unsupported data type\n";

@@ -15,44 +15,31 @@
 
 #include <ImageStruct.h>
 
-#define IMAGESTRUCT_UINT8                   1
-#define IMAGESTRUCT_INT8                    2
-#define IMAGESTRUCT_UINT16                  3
-#define IMAGESTRUCT_INT16                   4
-#define IMAGESTRUCT_UINT32                  5
-#define IMAGESTRUCT_INT32                   6
-#define IMAGESTRUCT_UINT64                  7
-#define IMAGESTRUCT_INT64                   8
-#define IMAGESTRUCT_FLOAT                   9
-#define IMAGESTRUCT_DOUBLE                 10
-#define IMAGESTRUCT_COMPLEX_FLOAT          11
-#define IMAGESTRUCT_COMPLEX_DOUBLE         12
-#define IMAGESTRUCT_EVENT_UI8_UI8_UI16_UI8 20
 
 inline
 int imageStructBitPix( int dtype )
 {
    switch(dtype)
    {
-      case IMAGESTRUCT_UINT8:
+      case _DATATYPE_UINT8:
          return BYTE_IMG;
-      case IMAGESTRUCT_INT8:
+      case _DATATYPE_INT8:
          return SBYTE_IMG;
-      case IMAGESTRUCT_UINT16:
+      case _DATATYPE_UINT16:
          return USHORT_IMG;
-      case IMAGESTRUCT_INT16:
+      case _DATATYPE_INT16:
          return SHORT_IMG;
-      case IMAGESTRUCT_UINT32:
+      case _DATATYPE_UINT32:
          return ULONG_IMG;
-      case IMAGESTRUCT_INT32:
+      case _DATATYPE_INT32:
          return LONG_IMG;
-      case IMAGESTRUCT_UINT64:
+      case _DATATYPE_UINT64:
          return ULONGLONG_IMG;
-      case IMAGESTRUCT_INT64:
+      case _DATATYPE_INT64:
          return LONGLONG_IMG;
-      case IMAGESTRUCT_FLOAT:
+      case _DATATYPE_FLOAT:
          return FLOAT_IMG;
-      case IMAGESTRUCT_DOUBLE:
+      case _DATATYPE_DOUBLE:
          return DOUBLE_IMG;
       default:
          std::cerr << "bitpix not implemented for type\n";
@@ -64,7 +51,7 @@ template<int is_dt>
 struct imageStructDataType;
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_UINT8>
+struct imageStructDataType<_DATATYPE_UINT8>
 {
    typedef uint8_t type;
    constexpr static size_t size = sizeof(type);
@@ -74,7 +61,7 @@ struct imageStructDataType<IMAGESTRUCT_UINT8>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_INT8>
+struct imageStructDataType<_DATATYPE_INT8>
 {
    typedef int8_t type;
    constexpr static size_t size = sizeof(type);
@@ -84,7 +71,7 @@ struct imageStructDataType<IMAGESTRUCT_INT8>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_UINT16>
+struct imageStructDataType<_DATATYPE_UINT16>
 {
    typedef uint16_t type;
    constexpr static size_t size = sizeof(type);
@@ -95,7 +82,7 @@ struct imageStructDataType<IMAGESTRUCT_UINT16>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_INT16>
+struct imageStructDataType<_DATATYPE_INT16>
 {
    typedef int16_t type;
    constexpr static size_t size = sizeof(type);
@@ -106,7 +93,7 @@ struct imageStructDataType<IMAGESTRUCT_INT16>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_UINT32>
+struct imageStructDataType<_DATATYPE_UINT32>
 {
    typedef uint32_t type;
    constexpr static size_t size = sizeof(type);
@@ -117,7 +104,7 @@ struct imageStructDataType<IMAGESTRUCT_UINT32>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_INT32>
+struct imageStructDataType<_DATATYPE_INT32>
 {
    typedef int32_t type;
    constexpr static size_t size = sizeof(type);
@@ -128,7 +115,7 @@ struct imageStructDataType<IMAGESTRUCT_INT32>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_UINT64>
+struct imageStructDataType<_DATATYPE_UINT64 >
 {
    typedef uint64_t type;
    constexpr static size_t size = sizeof(type);
@@ -139,7 +126,7 @@ struct imageStructDataType<IMAGESTRUCT_UINT64>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_INT64>
+struct imageStructDataType<_DATATYPE_INT64>
 {
    typedef int64_t type;
    constexpr static size_t size = sizeof(type);
@@ -150,7 +137,7 @@ struct imageStructDataType<IMAGESTRUCT_INT64>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_FLOAT>
+struct imageStructDataType<_DATATYPE_FLOAT>
 {
    typedef float type;
    constexpr static size_t size = sizeof(type);
@@ -161,7 +148,7 @@ struct imageStructDataType<IMAGESTRUCT_FLOAT>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_DOUBLE>
+struct imageStructDataType<_DATATYPE_DOUBLE>
 {
    typedef double type;
    constexpr static size_t size = sizeof(type);
@@ -172,7 +159,7 @@ struct imageStructDataType<IMAGESTRUCT_DOUBLE>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_COMPLEX_FLOAT>
+struct imageStructDataType<_DATATYPE_COMPLEX_FLOAT>
 {
    typedef complex_float type;
    constexpr static size_t size = sizeof(type);
@@ -183,7 +170,7 @@ struct imageStructDataType<IMAGESTRUCT_COMPLEX_FLOAT>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_COMPLEX_DOUBLE>
+struct imageStructDataType<_DATATYPE_COMPLEX_DOUBLE>
 {
    typedef complex_double type;
    constexpr static size_t size = sizeof(type);
@@ -193,7 +180,7 @@ struct imageStructDataType<IMAGESTRUCT_COMPLEX_DOUBLE>
 };
 
 template<>
-struct imageStructDataType<IMAGESTRUCT_EVENT_UI8_UI8_UI16_UI8>
+struct imageStructDataType<_DATATYPE_EVENT_UI8_UI8_UI16_UI8>
 {
    typedef EVENT_UI8_UI8_UI16_UI8 type;
    constexpr static size_t size = sizeof(type);
