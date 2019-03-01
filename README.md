@@ -16,20 +16,20 @@ You need:
 ### Building
 Just use
 ```
-g++ -O3 -o milk2ds9 milk2ds9.cpp -lxpa  -lpthread -I/path/to/ImageStreamIO/
+g++ -Ofast -o milk2ds9 milk2ds9.cpp -lxpa  -lpthread -lImageStreamIO
 ```
-where you set `/path/to/ImageStreamIO` to point to the directory containing `ImageStreamIO`.
+which assumes you have `make install`-ed the ImageStreamIO library.
 
-Note that we don't link against cfitsio, that is in the dependencies just for some definitions in the header.
+Note that we don't link against cfitsio, that is in the dependencies just for some definitions in the headers.
 
 ### Usage:
 
-Usage: `./milk2ds9 [-h] [-f frameno] [-p pauseTime] [-s semaphoreNumber] [-t ds9Title] [-w waitTime] /path/to/filename`
+Usage: `./milk2ds9 [-h] [-f frameno] [-p pauseTime] [-s semaphoreNumber] [-t ds9Title] [-w waitTime] image_name
 
 
 Required Argument:
 
-     /path/to/filename   the full path to the shared memory file.
+     image_name   the name of the image, which will be used to generate the path to the share memory file
 
 Options:
 

@@ -1,19 +1,62 @@
 
-#include <sys/shm.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/file.h>
 
+#include <signal.h>
 
 #define DS9INTERFACE_NO_EIGEN
 #include "mx/improc/ds9Interface.hpp"
 
 
-#include "ImageStruct.hpp"
+//#include "ImageStruct.hpp"
+#include <ImageStreamIO.h>
 
+bool timeToDie;
 
+void sigHandler( int signum,
+                 siginfo_t *siginf,
+                 void *ucont
+               )
+{
+   //Suppress those warnings . . .
+   static_cast<void>(signum);
+   static_cast<void>(siginf);
+   static_cast<void>(ucont);
+   
+   timeToDie = true;
+}
 
+int setSigTermHandler()
+{
+   struct sigaction act;
+   sigset_t set;
+
+   act.sa_sigaction = sigHandler;
+   act.sa_flags = SA_SIGINFO;
+   sigemptyset(&set);
+   act.sa_mask = set;
+
+   errno = 0;
+   if( sigaction(SIGTERM, &act, 0) < 0 )
+   {
+      std::cerr << " (" << "milk2ds9" << "): error setting SIGTERM handler: " << strerror(errno) << "\n";
+      return -1;
+   }
+
+   errno = 0;
+   if( sigaction(SIGQUIT, &act, 0) < 0 )
+   {
+      std::cerr << " (" << "milk2ds9" << "): error setting SIGQUIT handler: " << strerror(errno) << "\n";
+      return -1;
+   }
+
+   errno = 0;
+   if( sigaction(SIGINT, &act, 0) < 0 )
+   {
+      std::cerr << " (" << "milk2ds9" << "): error setting SIGINT handler: " << strerror(errno) << "\n";
+      return -1;
+   }
+
+   return 0;
+}
 
 void usage( const char * argv0,
             const char * err = 0
@@ -63,6 +106,8 @@ int main( int argc,
           char ** argv )
 {
 
+   timeToDie = false;
+   
    std::string ds9Title;
    int semaphoreNumber {0}; ///< Number of the semaphore to monitor for new image data.  This determines the filename.
 
@@ -133,10 +178,9 @@ int main( int argc,
       return -1;
    }
 
-   char SM_fname[200];
-   sprintf(SM_fname, "%s/%s.im.shm", SHAREDMEMDIR, argv[optind]);   
+   std::string shmem_key = argv[optind];
    
-   if(ds9Title == "") ds9Title = argv[optind];
+   if(ds9Title == "") ds9Title = shmem_key;
 
    IMAGE image;
 
@@ -146,16 +190,35 @@ int main( int argc,
 
    int bitpix;
 
-   while(1)
+   if(setSigTermHandler() < 0) return -1;
+   
+   while(!timeToDie)
    {
       bool opened = false;
-      while(!opened)
+      while(!opened && !timeToDie)
       {
-         if( openShMem( image, type_size, bitpix, sem, semaphoreNumber, SM_fname) == 0) opened = true;
-         usleep(1000);
+         if( ImageStreamIO_openIm(&image, shmem_key.c_str()) == 0)
+         {
+            if(image.md[0].sem <= semaphoreNumber) 
+            {
+               std::cerr << "Creation not complete yet\n";
+               ImageStreamIO_closeIm(&image);
+               sleep(1); //We just need to wait for the server process to finish startup.
+            }
+            else
+            {
+               sem = image.semptr[semaphoreNumber];
+               type_size = ImageStreamIO_typesize(image.md[0].atype);
+               bitpix = ImageStreamIO_bitpix(image.md[0].atype);
+               opened = true;
+            }
+         }
+         else
+         {
+            sleep(1); //be patient
+         }
       }
-      
-   
+         
       mx::improc::ds9Interface ds9(ds9Title);
 
       int curr_image;
@@ -164,8 +227,9 @@ int main( int argc,
       size_t last_sny = image.md[0].size[1];
       size_t last_snz = image.md[0].size[2];
 
-      while(1)
+      while(!timeToDie)
       {
+         errno = 0;
          if(sem_trywait(sem) == 0)
          {
             if(image.md[0].size[2] > 0)
@@ -181,25 +245,26 @@ int main( int argc,
          
             if( snx != last_snx || sny != last_sny || snz != last_snz )
             {
-               std::cerr << "Size change detected!\n";
+               std::cerr << "\nSize change detected!\n\n";
                break;
             }
          
             ds9.display( (void *) (image.array.SI8 + curr_image*snx*sny*type_size), bitpix, type_size, snx, sny, 1, frameNo);
          
-            last_snx = snx;
-            last_sny = sny;
-            last_snz = snz;
-         
+   
             usleep(waitTime);
          }
          else
          {
+            if(errno != EAGAIN) break;
+
+            if(image.md[0].sem <= 0) break; //Indicates that the server has cleaned up.
+            
             usleep(pauseTime);
          }
       }
 
-      closeShMem(image);
+      if(opened) ImageStreamIO_closeIm(&image);
    }
    return 0;
 }
