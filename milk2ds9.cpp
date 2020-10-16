@@ -6,8 +6,8 @@
 #include "mx/improc/ds9Interface.hpp"
 
 
-#include <ImageStruct.h>
-#include <ImageStreamIO.h>
+#include <ImageStreamIO/ImageStruct.h>
+#include <ImageStreamIO/ImageStreamIO.h>
 
 bool timeToDie;
 
