@@ -10,7 +10,7 @@ Note: you are on the `new_milk` branch.
 You need:
 - ds9 (http://ds9.si.edu/site/Home.html)
 - cfitsio (https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html)
-- CACAO (https://github.com/cacao-org/cacao) or at least MILK (https://github.com/milk-org/milk).
+- MILK (https://github.com/milk-org/milk-package).
 - XPA (http://hea-www.harvard.edu/RD/xpa/)
 
   Note: you need the header installed which may not be provided by packages.  I recommend just compiling it yourself instead of using the package manager.
