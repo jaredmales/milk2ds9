@@ -13,7 +13,7 @@ You need:
 
   Note: you need the header installed which may not be provided by packages.  I recommend just compiling it yourself instead of using the package manager.
 - cfitsio (https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html)
-- CACAO (https://github.com/cacao-org/cacao) or at least MILK (https://github.com/milk-org/milk).
+- MILK (https://github.com/milk-org/milk-package).
 
 ### Building
 Just use
