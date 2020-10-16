@@ -4,6 +4,8 @@ milk2ds9
 A simple utility to send images from the MILK shared memory structure to
 the ds9 image viewer.
 
+NOTE: You are on the `master` branch, which currently works for the old MILK.  Use `git checkout new_milk` if you are using the new MILK.
+
 ### Dependencies
 You need:
 - ds9 (http://ds9.si.edu/site/Home.html)
