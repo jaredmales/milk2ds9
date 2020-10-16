@@ -1,12 +1,12 @@
 
-
+#include <fcntl.h>
 #include <signal.h>
 
 #define DS9INTERFACE_NO_EIGEN
 #include "mx/improc/ds9Interface.hpp"
 
 
-//#include "ImageStruct.hpp"
+#include <ImageStruct.h>
 #include <ImageStreamIO.h>
 
 bool timeToDie;
@@ -79,13 +79,13 @@ void usage( const char * argv0,
    std::cerr << "                        Default is 1.\n";
    std::cerr << "     -p pauseTime       specify the time, in usec, to pause \n";
    std::cerr << "                        before re-checking the semaphore.\n";
-   std::cerr << "                        Default is 100 usec.\n";
+   std::cerr << "                        Default is 1000 usec.\n";
    std::cerr << "     -s semaphoreNumber specify the semaphore number to monitor\n";
    std::cerr << "     -t ds9Title        specify the title of the DS9 window to\n";
    std::cerr << "                        use.  Default is the filename.\n";
    std::cerr << "     -w waitTime        specify the time, in usec, to wait\n";
    std::cerr << "                        after sending an image to DS9.  Default\n";
-   std::cerr << "                        is 1000 usec.\n";
+   std::cerr << "                        is 10000 usec.\n";
 
 }
 
@@ -111,8 +111,8 @@ int main( int argc,
    std::string ds9Title;
    int semaphoreNumber {0}; ///< Number of the semaphore to monitor for new image data.  This determines the filename.
 
-   int waitTime {1000};
-   int pauseTime {100};
+   int waitTime {10000};
+   int pauseTime {1000};
    int frameNo {1};
 
    bool help {false};
@@ -192,11 +192,34 @@ int main( int argc,
 
    if(setSigTermHandler() < 0) return -1;
    
+   mx::improc::ds9Interface ds9(ds9Title);
+   
    while(!timeToDie)
    {
       bool opened = false;
+      
+      int reported = 0;
       while(!opened && !timeToDie)
       {
+         
+         //b/c ImageStreamIO prints every single time, and latest version don't support stopping it yet, and that isn't thread-safe-able anyway
+         //we do our own checks.  This is the same code in ImageStreamIO_openIm...
+         int SM_fd;
+         char SM_fname[200];
+         ImageStreamIO_filename(SM_fname, sizeof(SM_fname), shmem_key.c_str());
+         SM_fd = open(SM_fname, O_RDWR);
+         if(SM_fd == -1)
+         {
+            if(!reported) std::cerr << "ImageStream " << shmem_key << " not found (yet).  Retrying . . . \n";
+            reported = 1;
+            sleep(1); //be patient
+            continue;
+         }
+         
+         //Found and opened,  close it and then use ImageStreamIO
+         reported = 0;
+         close(SM_fd);
+         
          if( ImageStreamIO_openIm(&image, shmem_key.c_str()) == 0)
          {
             if(image.md[0].sem <= semaphoreNumber) 
@@ -208,8 +231,8 @@ int main( int argc,
             else
             {
                sem = image.semptr[semaphoreNumber];
-               type_size = ImageStreamIO_typesize(image.md[0].atype);
-               bitpix = ImageStreamIO_bitpix(image.md[0].atype);
+               type_size = ImageStreamIO_typesize(image.md[0].datatype);
+               bitpix = ImageStreamIO_bitpix(image.md[0].datatype);
                opened = true;
             }
          }
@@ -218,8 +241,6 @@ int main( int argc,
             sleep(1); //be patient
          }
       }
-         
-      mx::improc::ds9Interface ds9(ds9Title);
 
       int curr_image;
       size_t snx, sny, snz;
@@ -227,10 +248,12 @@ int main( int argc,
       size_t last_sny = image.md[0].size[1];
       size_t last_snz = image.md[0].size[2];
 
+      uint64_t last_cnt0 = -1;
+      
       while(!timeToDie)
       {
          errno = 0;
-         if(sem_trywait(sem) == 0)
+         if(image.md->cnt0 != last_cnt0)
          {
             if(image.md[0].size[2] > 0)
             {
@@ -243,21 +266,22 @@ int main( int argc,
             sny = image.md[0].size[1];
             snz = image.md[0].size[2];
          
+            last_cnt0 = image.md->cnt0;
+            
             if( snx != last_snx || sny != last_sny || snz != last_snz )
             {
                std::cerr << "\nSize change detected!\n\n";
                break;
             }
          
+            
+            
             ds9.display( (void *) (image.array.SI8 + curr_image*snx*sny*type_size), bitpix, type_size, snx, sny, 1, frameNo);
          
-   
             usleep(waitTime);
          }
          else
          {
-            if(errno != EAGAIN) break;
-
             if(image.md[0].sem <= 0) break; //Indicates that the server has cleaned up.
             
             usleep(pauseTime);

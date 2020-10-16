@@ -40,6 +40,10 @@
 #include "../ipc/sharedMemSegment.hpp"
 #include "fitsUtils.hpp"
 
+#ifndef DS9INTERFACE_NO_EIGEN
+#include "eigenImage.hpp"
+#endif
+
 namespace mx
 {
 namespace improc
@@ -73,6 +77,15 @@ namespace improc
 #endif
 
 
+class ds9Segment : public ipc::sharedMemSegment
+{
+public:
+   size_t dim1 {0};
+   size_t dim2 {0};
+   size_t dim3 {0};
+   int bitpix {0};
+   
+};
 
 /// An interface to the ds9 image viewer.
 /** Handles spawning the ds9 window, and manages shared memory segments,
@@ -103,7 +116,8 @@ protected:
    bool m_connected {false};
 
    ///A vector of shared memory segments, one per frame
-   std::vector<ipc::sharedMemSegment> segs;
+   //std::vector<ipc::sharedMemSegment> m_segs;
+   std::vector<ds9Segment> m_segs;
 
    bool m_preserveRegions{true};
    bool m_regionsPreserved {false};
@@ -120,6 +134,9 @@ public:
    ///Constructor which initializes the access point title.
    explicit ds9Interface(const std::string & nn);
 
+   ///Constructor which initializes the access point title.
+   explicit ds9Interface(const char * nn);
+   
    #ifndef DS9INTERFACE_NO_EIGEN
    /// Constructor which, after initialization, proceeds to display an Eigen-like array in ds9.
    /**
@@ -169,6 +186,7 @@ public:
 
    int XPASet( const char * cmd );
 
+protected:
    ///Spawn (open) the ds9 image viewer
    /** This forks and execs.  An error is returned if exec fails.
      *
@@ -185,16 +203,21 @@ public:
      * \retval 0 on sucess
      * \retval -1 on an error
      */
-   int addsegment(int frame /**< [in] the number of the new frame to initialize.  \note frame must be >= 1. */);
+   int addsegment(size_t frame /**< [in] the number of the new frame to initialize.  \note frame must be >= 1. */);
 
+public:
    ///Open a frame in ds9
    /** Nothing is done if the frame already exists.  First calls \ref addsegment.
      *
      * \retval 0 on sucess
      * \retval -1 on an error
      */
-   int addframe( int frame /**< [in] the number of the new frame to initialize.  \note frame must be >= 1. */);
+   int addframe( size_t frame /**< [in] the number of the new frame to initialize.  \note frame must be >= 1. */);
 
+   int togglePreserveRegions( size_t frame,
+                              bool onoff
+                            );
+   
    int togglePreserveRegions(bool onoff);
 
    int togglePreservePan(bool onoff);
@@ -262,6 +285,15 @@ public:
                  );
    #endif //DS9INTERFACE_NO_EIGEN
 
+   
+   int loadRegion( size_t frame,
+                   const std::string & fname
+                 );
+   
+   int loadRegion( const std::string & fname
+                 );
+   
+   
    ///Shutdown the ds9 interface
    /** Detaches from the shared memory segments.
      *
@@ -278,6 +310,12 @@ ds9Interface::ds9Interface()
 }
 
 ds9Interface::ds9Interface(const std::string & nn)
+{
+   initialize();
+   title(nn);
+}
+
+ds9Interface::ds9Interface(const char * nn)
 {
    initialize();
    title(nn);
@@ -317,13 +355,25 @@ int ds9Interface::title(const std::string & nn)
 {
    m_title = nn;
    m_connected = false;
+   
+   return 0;
 }
 
 inline
 int ds9Interface::connect()
 {
-   char * mode = NULL;
-
+   
+   if(xpa) 
+   {
+      shutdown();
+      xpa = NULL;
+   }
+   
+   if(xpa == NULL)
+   {
+      xpa = XPAOpen(NULL);
+   }
+   
    int  n = 1;
    char *names[1];
    names[0] = NULL;
@@ -348,8 +398,12 @@ int ds9Interface::connect()
    if(rv == 0)
    {
       if( spawn() != 0) return -1;
-      if(names[0]) free(names[0]);
-
+      if(names[0]) 
+      {
+         free(names[0]);
+         names[0] = NULL;
+      }
+      
       int slept = 0;
       while(rv == 0 && slept < DS9INTERFACE_SPAWN_TIMEOUT)
       {
@@ -386,6 +440,15 @@ int ds9Interface::spawn()
    int pid = fork();
    if (pid==0)
    {
+      /* Create a new SID for the child process so it is detached*/
+      pid_t sid = setsid();
+     
+      if (sid < 0) 
+      {
+         std::cerr << "ds9Interface: failed to detach.\n";
+         perror("ds9Interface");
+      }
+      
       errno = 0;
       execlp("ds9", "ds9", "-title", m_title.c_str(), (char *) 0);
 
@@ -410,26 +473,27 @@ int ds9Interface::XPASet( const char * cmd )
       std::cerr << "ds9Interface::XPASet: did not send cmd properly.\n";
       return -1;
    }
-
+   
    return 0;
 }
 
 inline
-int ds9Interface::addsegment( int frame )
+int ds9Interface::addsegment( size_t frame )
 {
-   int i;
    size_t curr_n;
 
-   if(frame-1 < segs.size()) return 0;
+   if(frame == 0) return -1;
+   
+   if((size_t)(frame-1) < m_segs.size()) return 0;
 
-   curr_n = segs.size();
+   curr_n = m_segs.size();
 
-   segs.resize(frame);
+   m_segs.resize(frame);
 
-   for(i = curr_n; i< segs.size(); i++)
+   for(size_t i = curr_n; i< m_segs.size(); ++i)
    {
-      segs[i].initialize();
-      segs[i].setKey(0, IPC_PRIVATE);
+      m_segs[i].initialize();
+      m_segs[i].setKey(0, IPC_PRIVATE);
    }
 
    return 0;
@@ -437,14 +501,13 @@ int ds9Interface::addsegment( int frame )
 }
 
 inline
-int ds9Interface::addframe( int frame )
+int ds9Interface::addframe( size_t frame )
 {
    char cmd[DS9INTERFACE_CMD_MAX_LENGTH];
-   int ret;
 
    addsegment( frame );
 
-   snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "frame %i", frame);
+   snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "frame %zu", frame);
 
    if(!m_connected) if(connect() < 0) return -1;
 
@@ -461,9 +524,35 @@ int ds9Interface::addframe( int frame )
 }
 
 inline
-int ds9Interface::togglePreserveRegions(bool onoff)
+int ds9Interface::togglePreserveRegions( bool onoff)
+{
+   
+   for(size_t frame=1; frame< m_segs.size()+1; ++frame)
+   {
+      int rv = togglePreserveRegions(frame, onoff);
+      if(rv < 0) return -1;
+   }
+
+   return 0;
+}
+
+inline
+int ds9Interface::togglePreserveRegions( size_t frame,
+                                         bool onoff
+                                       )
 {
    int rv;
+
+   char cmd[DS9INTERFACE_CMD_MAX_LENGTH];
+   
+   snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "frame %zu", frame);
+   rv = XPASet(cmd);
+ 
+   if(rv < 0)
+   {
+      std::cerr << "ds9Interface::preserveRegions: error sending frame." << "\n";
+      return -1;
+   }
 
    if(onoff == true)
    {
@@ -519,9 +608,8 @@ int ds9Interface::display( const void * im,
                            int frame
                           )
 {
-   size_t i, tot_size;
+   size_t tot_size;
    char cmd[DS9INTERFACE_CMD_MAX_LENGTH];
-   int ret;
 
    if(frame < 1)
    {
@@ -531,40 +619,64 @@ int ds9Interface::display( const void * im,
 
    if(!m_connected) if(connect() < 0) return -1;
 
-   if(addframe(frame) < 0) return -1;
-
+   if(addframe(frame) < 0) 
+   {
+      m_connected = false;
+      return -1;
+   }
    //Calculate total size
    tot_size= pixsz;
    tot_size*=dim1;
    tot_size*=dim2;
    tot_size*=dim3;
+   
+   bool realloc = false;
 
    //Re-allocate shared memory if necessary
-   if(tot_size > segs[frame-1].size)
+   if(tot_size > m_segs[frame-1].size)
    {
-      if( segs[frame-1].size > 0 )
+      if( m_segs[frame-1].size > 0 )
       {
-         segs[frame-1].detach();
+         m_segs[frame-1].detach();
       }
-      segs[frame-1].create(tot_size);
-   }
-
-   memcpy( segs[frame-1].addr, im, tot_size );
-
-
-
-   //Handle single image so that the cube dialog doesn't open up if dim3=1
-   if(dim3 == 1)
-   {
-      snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "shm array shmid %i [xdim=%zu,ydim=%zu,bitpix=%i]",
-                                      segs[frame-1].shmemid,
-                                     dim1, dim2, bitpix);
+      m_segs[frame-1].create(tot_size);
+      
+      realloc = true;
    }
    else
    {
-      snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "shm array shmid %i [xdim=%zu,ydim=%zu,zdim=%zu,bitpix=%i]",
-                                      segs[frame-1].shmemid,
-                                     dim1, dim2, dim3, bitpix);
+      if( dim1 != m_segs[frame-1].dim1 || dim2 != m_segs[frame-1].dim2 || dim3 != m_segs[frame-1].dim3 || bitpix != m_segs[frame-1].bitpix)
+      {
+         realloc = true; //force a new shm command
+      }
+   }
+
+   memcpy( m_segs[frame-1].addr, im, tot_size );
+
+   m_segs[frame-1].dim1 = dim1;
+   m_segs[frame-1].dim2 = dim2;
+   m_segs[frame-1].dim3 = dim3;
+   m_segs[frame-1].bitpix = bitpix;
+   
+   if(realloc)
+   {
+      //Handle single image so that the cube dialog doesn't open up if dim3=1
+      if(dim3 == 1)
+      {
+         snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "shm array shmid %i [xdim=%zu,ydim=%zu,bitpix=%i]",
+                                         m_segs[frame-1].shmemid,
+                                        dim1, dim2, bitpix);
+      }
+      else
+      {
+         snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "shm array shmid %i [xdim=%zu,ydim=%zu,zdim=%zu,bitpix=%i]",
+                                         m_segs[frame-1].shmemid,
+                                        dim1, dim2, dim3, bitpix);
+      }
+   }
+   else
+   {
+      snprintf(cmd, DS9INTERFACE_CMD_MAX_LENGTH, "update");
    }
 
    int rv = XPASet(cmd);
@@ -572,6 +684,7 @@ int ds9Interface::display( const void * im,
    if(rv != 0)
    {
       std::cerr << "ds9Interface: sending shm array command to ds9 failed.\n";
+      m_connected = false;
       return -1;
    }
 
@@ -616,13 +729,60 @@ int ds9Interface::operator()( const arrayT & array,
 #endif //DS9INTERFACE_NO_EIGEN
 
 inline
+int ds9Interface::loadRegion( size_t frame,
+                              const std::string & fname
+                            )
+{
+   std::string cmd;
+   
+   cmd = "frame " + std::to_string(frame);
+   int rv = XPASet(cmd.c_str());
+ 
+   if(rv < 0)
+   {
+      std::cerr << "ds9Interface::loadRegion: error sending frame." << "\n";
+      return -1;
+   }
+   
+   cmd = "regions load " + fname;
+   
+   rv = XPASet(cmd.c_str());
+   
+   if(rv < 0)
+   {
+      std::cerr << "ds9Interface::loadRegion: error loading region." << "\n";
+      return -1;
+   }
+   
+   return 0;
+}
+
+inline
+int ds9Interface::loadRegion( const std::string & fname )
+{
+   std::string cmd;
+      
+   cmd = "regions load all " + fname;
+   
+   int rv = XPASet(cmd.c_str());
+   
+   if(rv < 0)
+   {
+      std::cerr << "ds9Interface::loadRegion: error loading region." << "\n";
+      return -1;
+   }
+   
+   return 0;
+}
+   
+inline
 int ds9Interface::shutdown()
 {
    size_t i;
 
-   for(i=0; i < segs.size(); i++) segs[i].detach();
+   for(i=0; i < m_segs.size(); i++) m_segs[i].detach();
 
-   segs.clear();
+   m_segs.clear();
 
    return 0;
 }
